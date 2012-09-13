@@ -326,7 +326,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
     }
 }
 
-- (void)endRefreshing
+- (void)endRefreshing:(dispatch_block_t)completion
 {
     if (_refreshing) {
         self.refreshing = NO;
@@ -351,6 +351,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
             // We need to use the scrollView somehow in the end block,
             // or it'll get released in the animation block.
             [blockScrollView setContentInset:UIEdgeInsetsMake(0, 0, 0, 0)];
+            completion();
         }];
     }
 }

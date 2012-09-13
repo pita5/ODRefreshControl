@@ -30,6 +30,6 @@
 - (void)beginRefreshing;
 
 // Tells the control the refresh operation has ended
-- (void)endRefreshing;
+- (void)endRefreshing:(dispatch_block_t)completion;
 
 @end
