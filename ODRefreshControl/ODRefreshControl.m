@@ -48,6 +48,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
 - (id)initInScrollView:(UIScrollView *)scrollView
 {
     self = [super initWithFrame:CGRectMake(0, -kTotalViewHeight, scrollView.frame.size.width, kTotalViewHeight)];
+    
     if (self) {
         self.scrollView = scrollView;
         
@@ -304,25 +305,35 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
 
 - (void)beginRefreshing
 {
-    if (!_refreshing) {
-        CABasicAnimation *alphaAnimation = [CABasicAnimation animationWithKeyPath:@"opacity"];
-        alphaAnimation.duration = 0.0001;
-        alphaAnimation.toValue = [NSNumber numberWithFloat:0];
-        alphaAnimation.fillMode = kCAFillModeForwards;
-        alphaAnimation.removedOnCompletion = NO;
-        [_shapeLayer addAnimation:alphaAnimation forKey:nil];
-        [_arrowLayer addAnimation:alphaAnimation forKey:nil];
-        [_highlightLayer addAnimation:alphaAnimation forKey:nil];
-        
-        _activity.alpha = 1;
-        _activity.layer.transform = CATransform3DMakeScale(1, 1, 1);
-        
-        CGPoint offset = self.scrollView.contentOffset;
-        [self.scrollView setContentInset:UIEdgeInsetsMake(kOpenedViewHeight, 0, 0, 0)];
-        [self.scrollView setContentOffset:offset animated:NO];
-        
-        self.refreshing = YES;
-        _canRefresh = NO;
+    if (!_refreshing)
+    {
+        int64_t delayInSeconds = 0.5;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            
+            CABasicAnimation *alphaAnimation = [CABasicAnimation animationWithKeyPath:@"opacity"];
+            alphaAnimation.duration = 0.0001;
+            alphaAnimation.toValue = [NSNumber numberWithFloat:0];
+            alphaAnimation.fillMode = kCAFillModeForwards;
+            alphaAnimation.removedOnCompletion = NO;
+            [_shapeLayer addAnimation:alphaAnimation forKey:nil];
+            [_arrowLayer addAnimation:alphaAnimation forKey:nil];
+            [_highlightLayer addAnimation:alphaAnimation forKey:nil];
+            
+            [_activity startAnimating];
+            _activity.alpha = 1;
+            _activity.layer.transform = CATransform3DMakeScale(1, 1, 1);
+            
+            CGFloat offset = kOpenedViewHeight;
+            
+            _activity.center = CGPointMake(floor(self.frame.size.width / 2), MIN(offset + self.frame.size.height + floor(kOpenedViewHeight / 2), self.frame.size.height - kOpenedViewHeight/ 2));
+            [self.scrollView setContentInset:UIEdgeInsetsMake(kOpenedViewHeight, 0, 0, 0)];
+            [self.scrollView setContentOffset:CGPointMake(0, -kOpenedViewHeight) animated:YES];
+            
+            self.refreshing = YES;
+            _canRefresh = NO;
+            
+        });
     }
 }
 
@@ -334,7 +345,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
         // halfway through the end animation.
         // This allows for the refresh control to clean up the observer,
         // in the case the scrollView is released while the animation is running
-        __block UIScrollView *blockScrollView = self.scrollView;
+        __weak UIScrollView *blockScrollView = self.scrollView;
         [UIView animateWithDuration:0.4 animations:^{
             [blockScrollView setContentInset:UIEdgeInsetsMake(0, 0, 0, 0)];
             _activity.alpha = 0;
